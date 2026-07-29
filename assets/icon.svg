@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="18" y1="12" x2="110" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#203B35"/>
+      <stop offset="1" stop-color="#10231F"/>
+    </linearGradient>
+    <linearGradient id="trail" x1="29" y1="96" x2="99" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BBD9CF"/>
+      <stop offset="1" stop-color="#F2E6C8"/>
+    </linearGradient>
+  </defs>
+  <rect x="5" y="5" width="118" height="118" rx="28" fill="url(#bg)"/>
+  <path d="M28 96C31 70 45 55 65 56C82 57 96 47 99 28" fill="none" stroke="url(#trail)" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="31" cy="94" r="8" fill="#F2E6C8"/>
+  <circle cx="65" cy="56" r="7" fill="#96BFB2"/>
+  <circle cx="99" cy="28" r="8" fill="#F2E6C8"/>
+  <path d="M91 84C91 76.8 96.8 71 104 71C111.2 71 117 76.8 117 84C117 92.4 108.7 100.5 104 104C99.3 100.5 91 92.4 91 84Z" fill="#D98E72"/>
+  <circle cx="97.5" cy="78.5" r="3.4" fill="#FFF3DC"/>
+  <circle cx="104" cy="75.5" r="3.4" fill="#FFF3DC"/>
+  <circle cx="110.5" cy="78.5" r="3.4" fill="#FFF3DC"/>
+  <path d="M98.6 87.8C98.6 84.8 101 82.4 104 82.4C107 82.4 109.4 84.8 109.4 87.8C109.4 91.3 106 93.6 104 95C102 93.6 98.6 91.3 98.6 87.8Z" fill="#FFF3DC"/>
+</svg>

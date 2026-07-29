@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>对话足迹导出 · 浏览器侧栏</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">CURRENT CHAT</p>
+          <h1>对话足迹导出</h1>
+        </div>
+        <span class="local-badge">浏览器侧栏</span>
+      </header>
+
+      <p id="intro" class="intro">
+        此侧栏只属于打开它的 ChatGPT 标签；切到其他对话会隐藏，切回来会恢复。
+      </p>
+
+      <section id="source-panel" class="source-panel">
+        <div>
+          <span>当前来源</span>
+          <strong id="source-title">正在识别…</strong>
+          <small id="source-url"></small>
+        </div>
+        <button id="focus-source-button" type="button">切回来源</button>
+      </section>
+
+      <div class="primary-actions">
+        <button id="read-button" class="primary" type="button">读取此窗口</button>
+        <button id="fixed-window-button" type="button">仅此标签</button>
+      </div>
+
+      <section class="rescue-panel">
+        <label for="conversation-reference">打不开的窗口</label>
+        <div class="rescue-row">
+          <input
+            id="conversation-reference"
+            type="text"
+            inputmode="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="粘贴 https://chatgpt.com/c/…"
+          >
+          <button id="read-link-button" type="button">直接读取</button>
+        </div>
+        <p>来源标签停在任意正常的 ChatGPT 页面即可，不需要打开目标窗口。</p>
+      </section>
+
+      <section id="status-panel" class="status-panel" aria-live="polite">
+        <div id="status-dot" class="status-dot idle"></div>
+        <p id="status-text">正在恢复来源标签…</p>
+      </section>
+
+      <section id="summary" class="summary hidden">
+        <h2 id="conversation-title">未命名对话</h2>
+        <dl>
+          <div>
+            <dt>全部节点</dt>
+            <dd id="node-count">—</dd>
+          </div>
+          <div>
+            <dt>当前路径</dt>
+            <dd id="path-count">—</dd>
+          </div>
+          <div>
+            <dt>分支点</dt>
+            <dd id="branch-count">—</dd>
+          </div>
+          <div>
+            <dt>树结构</dt>
+            <dd id="tree-health">—</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section id="downloads" class="downloads hidden">
+        <fieldset class="format-picker">
+          <legend>选择导出格式</legend>
+          <label>
+            <input id="json-format" type="checkbox" checked>
+            <span><strong>JSON</strong><small>完整分支树</small></span>
+          </label>
+          <label>
+            <input id="md-format" type="checkbox" checked>
+            <span><strong>Markdown</strong><small>当前路径 + 图片</small></span>
+          </label>
+          <label>
+            <input id="txt-format" type="checkbox">
+            <span><strong>TXT</strong><small>当前路径纯文本</small></span>
+          </label>
+        </fieldset>
+        <button id="export-button" class="primary" type="button">导出已选格式</button>
+        <button id="report-button" type="button">诊断报告</button>
+      </section>
+
+      <details>
+        <summary>导出说明</summary>
+        <p>
+          JSON 保存完整分支树；Markdown 与 TXT 整理当前路径，Markdown 会把沿途图片放进
+          images 文件夹。选择多个格式时，会放进以窗口名和日期命名的 ZIP 文件夹。
+          侧栏只绑定打开它的这个 ChatGPT 标签；切走时自动隐藏，返回时保留原来的状态。
+        </p>
+      </details>
+    </main>
+
+    <script src="vendor/jszip.min.js"></script>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

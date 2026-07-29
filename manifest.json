@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "ChatGPT Trail Exporter",
+  "version": "0.7.0",
+  "description": "Export ChatGPT conversations as branch-preserving JSON, Markdown with images, or plain text.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*"
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Export current ChatGPT conversation",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  }
+}
