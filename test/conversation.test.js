@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   conversationToMarkdown,
   conversationToText,
+  conversationEndDate,
   datedBaseFilename
 } from "../lib/conversation.js";
 
@@ -50,7 +51,7 @@ const conversation = {
       message: {
         id: "hidden-branch",
         author: { role: "assistant" },
-        create_time: new Date(2026, 6, 23, 9, 2, 0).getTime() / 1000,
+        create_time: new Date(2026, 6, 30, 9, 2, 0).getTime() / 1000,
         content: { content_type: "text", parts: ["另一个分支"] },
         metadata: {}
       }
@@ -75,9 +76,16 @@ test("Markdown remains explicitly current-path only", () => {
   assert.doesNotMatch(markdown, /另一个分支/);
 });
 
-test("dated filename includes start and export dates", () => {
+test("conversation end date follows the last visible message on the current path", () => {
   assert.equal(
-    datedBaseFilename(conversation, new Date(2026, 6, 29, 20, 0, 0)),
-    "示例对话（2026.7.23~2026.7.29）"
+    conversationEndDate(conversation)?.getTime(),
+    new Date(2026, 6, 23, 9, 2, 0).getTime()
+  );
+});
+
+test("dated filename includes the window start and end dates", () => {
+  assert.equal(
+    datedBaseFilename(conversation),
+    "示例对话（2026.7.23~2026.7.23）"
   );
 });

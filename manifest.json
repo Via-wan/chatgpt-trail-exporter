@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ChatGPT Trail Exporter",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Export ChatGPT conversations as branch-preserving JSON, Markdown with images, or plain text.",
   "minimum_chrome_version": "116",
   "permissions": [
