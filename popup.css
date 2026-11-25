@@ -397,3 +397,24 @@ details p {
 .hidden {
   display: none;
 }
+
+/* Safari standalone exporter and explicit, user-initiated save link. */
+body.workspace-mode main {
+  max-width: 620px;
+  margin-inline: auto;
+}
+.workspace-mode .primary-actions { grid-template-columns: 1fr; }
+.save-link {
+  grid-column: 1 / -1;
+  display: block;
+  padding: 12px;
+  border: 1px solid #87988b;
+  border-radius: 10px;
+  background: #edf3ed;
+  color: #405b48;
+  font-size: 13px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+}
+.save-link.hidden { display: none; }

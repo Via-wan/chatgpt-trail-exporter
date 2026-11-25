@@ -17,7 +17,7 @@
       </header>
 
       <p id="intro" class="intro">
-        读取当前 ChatGPT 窗口，保留完整分支树。窗口较长时请保持弹窗开启。
+        读取当前 ChatGPT 窗口，保留完整分支树。长对话或带图片导出，建议先打开独立导出页。
       </p>
 
       <section id="source-panel" class="source-panel hidden">
@@ -31,7 +31,7 @@
 
       <div class="primary-actions">
         <button id="read-button" class="primary" type="button">读取当前窗口</button>
-        <button id="fixed-window-button" type="button">固定到侧栏</button>
+        <button id="fixed-window-button" type="button">打开独立导出页</button>
       </div>
 
       <section class="rescue-panel">
@@ -95,6 +95,7 @@
         </fieldset>
         <button id="export-button" class="primary" type="button">导出已选格式</button>
         <button id="report-button" type="button">诊断报告</button>
+        <a id="save-link" class="save-link hidden" aria-live="polite">点击保存文件</a>
       </section>
 
       <details>
@@ -104,7 +105,7 @@
           images 文件夹。选择多个格式时，会放进以窗口名和日期命名的 ZIP 文件夹。
           打不开的长窗口可粘贴链接直接读取，无需渲染聊天页面。
           若完整树接口也损坏，插件会自动分页抢救当前路径并明确标注；分页接口无法保证
-          返回其他隐藏分支。文件名会自动标注窗口起始日与本次导出日。
+          返回其他隐藏分支。文件名标注对话起始日与当前路径结束日。文件生成后，请点击保存链接。
         </p>
       </details>
     </main>

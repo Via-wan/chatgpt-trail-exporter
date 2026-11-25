@@ -1,21 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "ChatGPT Trail Exporter",
-  "version": "0.7.1",
+  "name": "ChatGPT Trail Exporter (Safari)",
+  "version": "0.7.2",
   "description": "Export ChatGPT conversations as branch-preserving JSON, Markdown with images, or plain text.",
-  "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
-    "scripting",
-    "sidePanel"
+    "scripting"
   ],
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://chat.openai.com/*"
   ],
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  },
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

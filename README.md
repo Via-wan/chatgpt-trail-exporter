@@ -1,6 +1,6 @@
 # ChatGPT Trail Exporter
 
-一个只处理当前 ChatGPT 对话的轻量 Chrome 扩展。
+一个只处理当前 ChatGPT 对话的轻量浏览器扩展。本分支是 macOS Safari 兼容版（0.7.2）；原 Chrome 版本继续保留在 `main`。
 
 > 本项目由 [Via-wan](https://github.com/Via-wan) 开源维护，不是 OpenAI 官方扩展。项目依赖 ChatGPT 网页内部接口；页面或接口更新后，部分功能可能需要同步适配。
 
@@ -20,35 +20,50 @@
 - 读取最终失败时可下载完整失败诊断，包含每条请求的策略、耗时、状态、锚点、分页大小及是否带入账号/项目上下文。
 - 检查父子断链、节点 ID 不一致、缺失当前节点等结构问题。
 - 所有内容仅在当前浏览器中读取和下载，不发送到第三方服务器。
-- 可把导出器固定到当前 ChatGPT 标签专属的 Chrome 浏览器侧栏。
-- 切到其他标签时侧栏自动隐藏，切回来源标签时恢复原来的读取与导出状态，不会应用到其他 GPT 对话。
+- 可打开绑定来源 ChatGPT 标签的独立导出页；长对话和图片打包不依赖工具栏弹窗保持开启。
 
-## 安装
+## Safari 安装（macOS）
 
-1. 解压 ZIP。
-2. 在 Chrome 地址栏打开 `chrome://extensions`。
-3. 开启右上角“开发者模式”。
-4. 点击“加载已解压的扩展程序”。
-5. 选择包含 `manifest.json` 的 `chatgpt-trail-exporter` 文件夹。
-6. 打开一个 ChatGPT 对话，点击浏览器工具栏中的扩展图标。
+### 直接临时安装（若 Safari 提供此功能）
+
+1. 下载本分支 ZIP 并解压；定位到包含 `manifest.json` 的文件夹。
+2. Safari 浏览器 → 设置 → 高级，勾选“显示网页开发者功能”。
+3. 设置 → 开发者 → 添加临时扩展（Add Temporary Extension），允许未签名扩展，然后选中上面的文件夹。
+4. 设置 → 扩展，启用 ChatGPT Trail Exporter (Safari)。
+5. 打开已登录的 ChatGPT 页面，点击扩展图标；在 Safari 网站权限提示中仅为当前 ChatGPT 网站选择“始终允许”。
+
+Apple 说明：临时扩展会在退出 Safari 或 24 小时后被移除。若没有“添加临时扩展”按钮，可用下述 Xcode 方式。
+
+### Xcode 本地安装（可反复使用）
+
+1. 从 Mac App Store 安装 Xcode 并完成首次启动。
+2. 在终端中执行（将路径替换成实际解压后的目录）：
+
+```bash
+xcrun safari-web-extension-packager "/path/to/chatgpt-trail-exporter-safari-compat" --macos-only
+```
+
+旧版本 Xcode 的命令名是 `safari-web-extension-converter`，其余参数相同。
+3. 打开生成的 Xcode 项目，选择 macOS App target；必要时选择 Sign to Run Locally，然后点击 Run。
+4. 如未使用开发者证书，按 Safari 的开发者设置允许未签名扩展，并在扩展设置中启用。退出 Safari 后可能需重新允许。
+5. 本分支没有签名的 macOS App 或 App Store 发行包。
+
+官方文档：[运行扩展](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) · [打包扩展](https://developer.apple.com/documentation/safariservices/packaging-a-web-extension-for-safari)。
 
 ## 使用
 
-1. 点击“读取当前窗口”并保持弹窗开启。
+1. 在 ChatGPT 标签点击扩展图标。短对话可直接点击“读取当前窗口”；长对话或含图片的导出建议先点击“打开独立导出页”，再点击“读取此窗口”。
 2. 等待结构诊断完成。
 3. 勾选需要的格式并点击“导出已选格式”：
    - `JSON`：正式备份，保留全部分支。
    - `Markdown`：当前路径的可读文本与沿途图片；Markdown 使用相对路径引用 `images` 文件夹。
    - `TXT`：当前路径的纯文本版本，保留角色、时间、正文与分支点提示。
 4. 只选择 JSON 或 TXT 时直接下载对应文件；只选择 Markdown 时下载 MD 与图片 ZIP；选择两种或三种时下载 `标题（起始日期~导出日期）.zip`，内容放在同名文件夹中。
-5. `诊断报告`：另行下载节点、分支和断链统计。
+5. 文件生成后，点击出现的“点击保存：文件名”链接，正式交由 Safari 下载。诊断报告也按此方式保存。不要在保存前关闭或刷新导出页。
 
-### 固定到浏览器侧栏
+### 独立导出页
 
-1. 在一个正常的 ChatGPT 标签页点击扩展图标。
-2. 点击“固定到侧栏”。插件会在这个标签页右侧打开浏览器原生侧栏。
-3. 切到其他 GPT 对话时侧栏自动隐藏；切回原标签时会恢复，并保留原来的读取与导出状态。
-4. 若要在另一个 GPT 对话使用侧栏，请在那个标签页重新点击插件并固定。
+Safari 版不使用 Chrome 的原生侧栏 API。独立导出页通过浏览器标签 ID 绑定打开它时的 ChatGPT 来源标签；切换标签不会关闭导出页。“切回来源”可返回来源页。不要关闭来源标签，否则无法继续读取对话及图片。
 
 ### 抢救打不开的长窗口
 
@@ -61,8 +76,7 @@
 
 - `activeTab`：仅在用户点击扩展时临时访问当前标签页。
 - `scripting`：在当前 ChatGPT 页面内执行同源读取。
-- `sidePanel`：把导出器显示在 Chrome 浏览器原生侧栏。
-- `chatgpt.com` / `chat.openai.com` 站点权限：保证侧栏切换标签或来源标签刷新后仍能继续读取；不访问其他网站。
+- `chatgpt.com` / `chat.openai.com` 站点权限：允许独立导出页读取绑定的来源标签；不访问其他网站。Safari 需要用户为相应站点授权。
 
 扩展不申请浏览历史、Cookie、全站访问或第三方服务器权限。
 
@@ -70,6 +84,7 @@
 
 ## 已知限制
 
+- Safari 兼容代码已根据公开 WebExtensions API 适配；仍需在真实 macOS Safari 和登录的 ChatGPT 页面上进行端到端验证。临时安装与下载行为随 Safari 版本和用户网站权限而异。
 - ChatGPT 的内部 conversation 接口不是公开 API，未来页面更新可能需要同步调整读取逻辑。
 - 分页抢救模式只能保证当前路径；只有“树结构：完整”的原始 JSON 才是完整分支备份。
 - 读取操作需要当前标签位于 `chatgpt.com` 或旧域名 `chat.openai.com`；手动目标必须是可访问的具体对话。
@@ -87,7 +102,7 @@
 npm test
 ```
 
-测试覆盖当前路径 TXT、Markdown 范围标记和日期文件名。
+测试覆盖当前路径 TXT、Markdown 范围标记和日期文件名，以及 Safari manifest、来源标签绑定、注入返回值、显式保存链接的逻辑；不代替真实 Safari 端到端测试。
 
 ## 开源许可
 

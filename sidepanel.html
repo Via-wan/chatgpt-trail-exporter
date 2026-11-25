@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>对话足迹导出 · 浏览器侧栏</title>
+    <title>对话足迹导出 · 独立导出页</title>
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
@@ -13,11 +13,11 @@
           <p class="eyebrow">CURRENT CHAT</p>
           <h1>对话足迹导出</h1>
         </div>
-        <span class="local-badge">浏览器侧栏</span>
+        <span class="local-badge">独立导出页</span>
       </header>
 
       <p id="intro" class="intro">
-        此侧栏只属于打开它的 ChatGPT 标签；切到其他对话会隐藏，切回来会恢复。
+        此导出页绑定打开它时的 ChatGPT 标签。可以切换标签，但请保持来源页与导出页开启。
       </p>
 
       <section id="source-panel" class="source-panel">
@@ -95,6 +95,7 @@
         </fieldset>
         <button id="export-button" class="primary" type="button">导出已选格式</button>
         <button id="report-button" type="button">诊断报告</button>
+        <a id="save-link" class="save-link hidden" aria-live="polite">点击保存文件</a>
       </section>
 
       <details>
@@ -102,7 +103,7 @@
         <p>
           JSON 保存完整分支树；Markdown 与 TXT 整理当前路径，Markdown 会把沿途图片放进
           images 文件夹。选择多个格式时，会放进以窗口名和日期命名的 ZIP 文件夹。
-          侧栏只绑定打开它的这个 ChatGPT 标签；切走时自动隐藏，返回时保留原来的状态。
+          文件生成后请点击保存。切换标签不会自动关闭本导出页；刷新或关闭导出页会丢失未保存的结果。
         </p>
       </details>
     </main>

@@ -25,7 +25,7 @@ ChatGPT Trail Exporter 是一个本地运行的浏览器扩展。
 
 - `activeTab`：在用户点击扩展后识别当前标签页。
 - `scripting`：在当前 ChatGPT 页面内执行同源读取。
-- `sidePanel`：把导出器固定到当前标签页的浏览器侧栏。
+- Safari 版独立导出页只在自身 URL 中携带来源标签 ID，不新增权限，也不保存对话内容。
 - `https://chatgpt.com/*` 与 `https://chat.openai.com/*`：在用户选择的 ChatGPT 页面中读取对话；不授予其他网站权限。
 
 ## 注意

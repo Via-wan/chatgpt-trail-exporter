@@ -8,6 +8,8 @@ import {
   projectIdFromReference
 } from "./lib/conversation.js";
 
+const extensionAPI = globalThis.browser ?? globalThis.chrome;
+
 const readButton = document.querySelector("#read-button");
 const fixedWindowButton = document.querySelector("#fixed-window-button");
 const readLinkButton = document.querySelector("#read-link-button");
@@ -17,6 +19,8 @@ const jsonFormat = document.querySelector("#json-format");
 const mdFormat = document.querySelector("#md-format");
 const txtFormat = document.querySelector("#txt-format");
 const reportButton = document.querySelector("#report-button");
+const saveLink = document.querySelector("#save-link");
+let preparedDownloadUrl = null;
 const summary = document.querySelector("#summary");
 const downloads = document.querySelector("#downloads");
 const statusDot = document.querySelector("#status-dot");
@@ -31,41 +35,40 @@ let conversation = null;
 let report = null;
 let failureReport = null;
 let activeChatTabId = null;
-let sideSourceTabId = null;
-let popupSourceTab = null;
-const sidePanelMode = window.location.pathname.endsWith("/sidepanel.html");
+let workspaceSourceTabId = null;
+const workspaceMode = window.location.pathname.endsWith("/sidepanel.html");
 const RATE_LIMIT_COOLDOWN_KEY = "trail-exporter-rate-limit-until";
 const DEFAULT_RATE_LIMIT_SECONDS = 120;
 const CONNECTION_RETRY_DELAYS_MS = [0, 700, 1600];
 
-if (sidePanelMode) {
-  document.body.classList.add("side-panel-mode");
+if (workspaceMode) {
+  document.body.classList.add("side-panel-mode", "workspace-mode");
   fixedWindowButton.classList.add("hidden");
-  focusSourceButton.classList.add("hidden");
   readButton.disabled = true;
-  initializeSidePanel().catch((error) => {
+  readLinkButton.disabled = true;
+  initializeWorkspace().catch((error) => {
+    clearWorkspaceSource();
     setStatus("error", error?.message || String(error));
-    readButton.disabled = false;
   });
-} else {
-  fixedWindowButton.disabled = true;
-  currentBrowserTab()
-    .then(async (tab) => {
-      assertChatGPTPage(tab.url);
-      popupSourceTab = tab;
-      await chrome.sidePanel.setOptions({ enabled: false });
-      await chrome.sidePanel.setOptions({
-        tabId: tab.id,
-        path: "sidepanel.html",
-        enabled: true
-      });
-    })
-    .catch(() => {
-      popupSourceTab = null;
-    })
-    .finally(() => {
-      fixedWindowButton.disabled = false;
-    });
+}
+
+function sourceTabIdFromSearch(search) {
+  const raw = new URLSearchParams(search).get("sourceTabId");
+  if (raw === null || !/^\d+$/.test(raw)) {
+    throw new Error("缺少来源标签。请从 ChatGPT 页重新点击插件并打开独立导出页。");
+  }
+  const id = Number(raw);
+  if (!Number.isSafeInteger(id)) throw new Error("来源标签 ID 无效。");
+  return id;
+}
+
+function mainFrameResult(injection) {
+  const frame = injection?.find((item) => item.frameId === 0) ?? injection?.[0];
+  if (frame?.error) throw new Error(frame.error.message || String(frame.error));
+  if (!frame || frame.result == null) {
+    throw new Error("Safari 未返回页面读取结果。请确认已允许扩展访问此 ChatGPT 网站，然后重试。");
+  }
+  return frame.result;
 }
 
 function setStatus(kind, text) {
@@ -79,7 +82,7 @@ function wait(milliseconds) {
 
 function looksLikePageConnectionFailure(result, thrownError = null) {
   if (thrownError) {
-    return /failed to fetch|cannot access|receiving end|frame|context invalidated/i.test(
+    return /failed to fetch|load failed|networkerror|cannot access|receiving end|frame|context invalidated/i.test(
       thrownError?.message || String(thrownError)
     );
   }
@@ -90,7 +93,7 @@ function looksLikePageConnectionFailure(result, thrownError = null) {
     attempts.every(
       (attempt) =>
         attempt.status == null &&
-        /failed to fetch/i.test(attempt.error || "")
+        /failed to fetch|load failed|networkerror/i.test(attempt.error || "")
     )
   );
 }
@@ -110,13 +113,13 @@ async function executeConversationReadWithRetry(tabId, args) {
     }
 
     try {
-      const injection = await chrome.scripting.executeScript({
+      const injection = await extensionAPI.scripting.executeScript({
         target: { tabId },
         world: "MAIN",
         func: fetchConversationFromPage,
         args
       });
-      lastResult = injection?.[0]?.result;
+      lastResult = mainFrameResult(injection);
       lastError = null;
       if (!looksLikePageConnectionFailure(lastResult)) {
         return lastResult;
@@ -159,7 +162,7 @@ function cooldownLabel(seconds) {
 
 function assertChatGPTPage(urlString) {
   const url = new URL(urlString);
-  if (!["chatgpt.com", "chat.openai.com"].includes(url.hostname)) {
+  if (url.protocol !== "https:" || !["chatgpt.com", "chat.openai.com"].includes(url.hostname)) {
     throw new Error("请先在当前标签打开任意 ChatGPT 页面。");
   }
 }
@@ -168,76 +171,76 @@ function showSourceTab(tab) {
   sourcePanel.classList.remove("hidden");
   sourceTitle.textContent = tab?.title || "未命名 ChatGPT 标签";
   sourceUrl.textContent = tab?.url || "";
-  focusSourceButton.disabled = !tab?.id;
+  focusSourceButton.disabled = !Number.isInteger(tab?.id);
 }
 
 function showMissingSource() {
   sourcePanel.classList.remove("hidden");
   sourceTitle.textContent = "此标签已不可用";
-  sourceUrl.textContent = "请在目标 ChatGPT 标签重新打开侧栏";
+  sourceUrl.textContent = "请在目标 ChatGPT 标签重新打开独立导出页";
   focusSourceButton.disabled = true;
 }
 
-function clearSideSource() {
-  sideSourceTabId = null;
+function clearWorkspaceSource() {
+  workspaceSourceTabId = null;
+  readButton.disabled = true;
+  readLinkButton.disabled = true;
   showMissingSource();
 }
 
 async function currentBrowserTab() {
-  const [tab] = await chrome.tabs.query({
+  const [tab] = await extensionAPI.tabs.query({
     active: true,
     currentWindow: true
   });
-  if (!tab?.id || !tab.url) {
-    throw new Error("无法识别当前标签页。");
+  if (!Number.isInteger(tab?.id) || !tab.url) {
+    throw new Error("无法识别当前标签页。请先允许扩展访问 ChatGPT 网站。");
   }
   return tab;
 }
 
-async function initializeSidePanel() {
-  const tab = await currentBrowserTab();
+async function initializeWorkspace() {
+  const sourceId = sourceTabIdFromSearch(window.location.search);
+  const tab = await extensionAPI.tabs.get(sourceId);
+  if (!tab?.url) throw new Error("无法访问来源标签。请先在 ChatGPT 网页选择始终允许此网站。");
   assertChatGPTPage(tab.url);
-  sideSourceTabId = tab.id;
+  workspaceSourceTabId = sourceId;
   showSourceTab(tab);
-  setStatus("idle", "侧栏仅绑定此 ChatGPT 标签；切走会隐藏，回来会恢复。");
+  setStatus("idle", "独立导出页已绑定来源标签，可保持打开并切换标签。");
   readButton.disabled = false;
+  readLinkButton.disabled = false;
 }
 
 async function getSourceChatTab() {
-  if (sidePanelMode) {
-    if (!sideSourceTabId) {
-      throw new Error("尚未绑定来源标签，请先点击“绑定当前标签”。");
+  if (workspaceMode) {
+    if (workspaceSourceTabId === null) {
+      throw new Error("来源标签不可用，请从 ChatGPT 页面重新打开导出页。");
     }
     try {
-      const tab = await chrome.tabs.get(sideSourceTabId);
-      if (tab?.id && tab.url) {
+      const tab = await extensionAPI.tabs.get(workspaceSourceTabId);
+      if (Number.isInteger(tab?.id) && tab.url) {
         assertChatGPTPage(tab.url);
         showSourceTab(tab);
         return tab;
       }
     } catch {
-      clearSideSource();
-      throw new Error("此 ChatGPT 标签已关闭或离开页面，请重新打开侧栏。");
+      // Report a missing or no longer authorized source below.
     }
+    clearWorkspaceSource();
+    throw new Error("来源标签已关闭、离开 ChatGPT 或未授予网站权限，请重新打开独立导出页。");
   }
-
   return currentBrowserTab();
 }
 
-function openSidePanel() {
+async function openWorkspace() {
   fixedWindowButton.disabled = true;
   try {
-    const tab = popupSourceTab;
-    if (!tab?.id || !tab.url) {
-      throw new Error("无法识别打开插件时的标签页，请重新点一次插件图标。");
-    }
+    const tab = await currentBrowserTab();
     assertChatGPTPage(tab.url);
-    chrome.sidePanel.open({ tabId: tab.id })
-      .then(() => window.close())
-      .catch((error) => {
-        setStatus("error", error?.message || String(error));
-        fixedWindowButton.disabled = false;
-      });
+    const url = extensionAPI.runtime.getURL("sidepanel.html") +
+      "?sourceTabId=" + encodeURIComponent(String(tab.id));
+    await extensionAPI.tabs.create({ url, active: true });
+    // Safari automatically dismisses the toolbar popup when changing tabs.
   } catch (error) {
     setStatus("error", error?.message || String(error));
     fixedWindowButton.disabled = false;
@@ -245,15 +248,15 @@ function openSidePanel() {
 }
 
 async function focusSourceTab() {
-  if (!sideSourceTabId) return;
+  if (workspaceSourceTabId === null) return;
   try {
-    const tab = await chrome.tabs.update(sideSourceTabId, { active: true });
+    const tab = await extensionAPI.tabs.update(workspaceSourceTabId, { active: true });
     if (tab?.windowId !== undefined) {
-      await chrome.windows.update(tab.windowId, { focused: true });
+      await extensionAPI.windows.update(tab.windowId, { focused: true });
     }
   } catch {
-    clearSideSource();
-    setStatus("error", "来源标签已经关闭，请重新打开侧栏。");
+    clearWorkspaceSource();
+    setStatus("error", "来源标签已经关闭，请重新打开独立导出页。");
   }
 }
 
@@ -262,6 +265,9 @@ async function fetchConversationFromPage(
   hintedProjectId = null,
   preferScopedDiscovery = false
 ) {
+  if (location.protocol !== "https:" || !["chatgpt.com", "chat.openai.com"].includes(location.hostname)) {
+    return { ok: false, error: "来源页面已离开 ChatGPT。", attempts: [] };
+  }
   const attempts = [];
   let accessToken = null;
   let accountId = null;
@@ -910,6 +916,11 @@ async function fetchConversationFromPage(
 }
 
 async function fetchFilesFromPage(fileRequests, conversationId) {
+  if (location.protocol !== "https:" || !["chatgpt.com", "chat.openai.com"].includes(location.hostname)) {
+    return fileRequests.map(({ fileId }) => ({
+      fileId, ok: false, error: "来源页面已离开 ChatGPT。", attempts: []
+    }));
+  }
   const results = [];
   let accessToken = null;
   let accountId = null;
@@ -1210,6 +1221,7 @@ async function readConversation(reference = null) {
     return;
   }
 
+  clearPreparedDownload();
   readButton.disabled = true;
   readLinkButton.disabled = true;
   fixedWindowButton.disabled = true;
@@ -1226,7 +1238,7 @@ async function readConversation(reference = null) {
   reportButton.textContent = "诊断报告";
   setStatus(
     "loading",
-    sidePanelMode
+    workspaceMode
       ? "正在读取完整对话树；可以切换到其他窗口。"
       : "正在读取完整对话树，请保持弹窗开启…"
   );
@@ -1323,8 +1335,9 @@ async function readConversation(reference = null) {
   } catch (error) {
     setStatus("error", error?.message || String(error));
   } finally {
-    readButton.disabled = false;
-    readLinkButton.disabled = false;
+    const sourceMissing = workspaceMode && workspaceSourceTabId === null;
+    readButton.disabled = sourceMissing;
+    readLinkButton.disabled = sourceMissing;
     fixedWindowButton.disabled = false;
     conversationReference.disabled = false;
   }
@@ -1355,13 +1368,24 @@ function downloadText(text, filename, mimeType) {
   downloadBlob(blob, filename);
 }
 
+function clearPreparedDownload() {
+  if (preparedDownloadUrl !== null) URL.revokeObjectURL(preparedDownloadUrl);
+  preparedDownloadUrl = null;
+  saveLink.classList.add("hidden");
+  saveLink.removeAttribute("href");
+  saveLink.removeAttribute("download");
+}
+
 function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  // Safari may block a scripted download after an asynchronous ZIP operation.
+  // Present a real, user-clicked download link instead, and keep the Blob alive
+  // until another export is prepared or this extension page is closed.
+  clearPreparedDownload();
+  preparedDownloadUrl = URL.createObjectURL(blob);
+  saveLink.href = preparedDownloadUrl;
+  saveLink.download = filename;
+  saveLink.textContent = "点击保存：" + filename;
+  saveLink.classList.remove("hidden");
 }
 
 function baseFilename() {
@@ -1382,7 +1406,7 @@ async function addMarkdownContents(zipRoot, base) {
 
   let downloadedImages = [];
   if (images.length) {
-    const injection = await chrome.scripting.executeScript({
+    const injection = await extensionAPI.scripting.executeScript({
       target: { tabId: activeChatTabId },
       world: "MAIN",
       func: fetchFilesFromPage,
@@ -1394,7 +1418,8 @@ async function addMarkdownContents(zipRoot, base) {
         conversation.conversation_id
       ]
     });
-    downloadedImages = injection?.[0]?.result ?? [];
+    downloadedImages = mainFrameResult(injection);
+    if (!Array.isArray(downloadedImages)) throw new Error("Safari 返回的图片读取结果无效。");
   }
 
   const resultById = new Map(
@@ -1474,38 +1499,39 @@ function selectedFormats() {
 
 function setFinishedStatus(markdownResult, formatCount) {
   if (!markdownResult) {
-    setStatus("ok", `导出完成：${formatCount} 种格式。`);
+    setStatus("ok", `文件已生成，请点击保存：${formatCount} 种格式。`);
     return;
   }
   const { images, failures, previewFallbacks } = markdownResult;
   if (failures.length) {
     setStatus(
       "error",
-      `已打包，但 ${failures.length}/${images.length} 张图片下载失败；ZIP 内附错误报告。`
+      `已打包，请点击保存；但 ${failures.length}/${images.length} 张图片下载失败；ZIP 内附错误报告。`
     );
   } else if (previewFallbacks.length) {
     setStatus(
       "ok",
-      `导出完成：${images.length - previewFallbacks.length} 张原图，${previewFallbacks.length} 张 Library 预览图。`
+      `文件已生成，请点击保存：${images.length - previewFallbacks.length} 张原图，${previewFallbacks.length} 张 Library 预览图。`
     );
   } else {
     setStatus(
       "ok",
       images.length
-        ? `导出完成：所选格式 + ${images.length} 张图片。`
-        : "导出完成：当前路径没有图片。"
+        ? `文件已生成，请点击保存：所选格式 + ${images.length} 张图片。`
+        : "文件已生成，请点击保存：当前路径没有图片。"
     );
   }
 }
 
 async function downloadSelectedFormats() {
-  if (!conversation || !activeChatTabId) return;
+  if (!conversation || activeChatTabId === null) return;
   const formats = selectedFormats();
   if (formats.length === 0) {
     setStatus("error", "请至少选择一种导出格式。");
     return;
   }
 
+  clearPreparedDownload();
   exportButton.disabled = true;
   try {
     const base = baseFilename();
@@ -1515,12 +1541,14 @@ async function downloadSelectedFormats() {
         `${base}.json`,
         "application/json"
       );
-      setStatus("ok", "JSON 导出完成：保留完整分支树。");
+      setStatus("ok", report?.branchTreeComplete === false
+        ? "JSON 已生成：分页抢救结果，不含全部分支。请点击保存。"
+        : "JSON 已生成：请点击保存。");
       return;
     }
     if (formats.length === 1 && formats[0] === "txt") {
       downloadText(conversationToText(conversation), `${base}.txt`, "text/plain");
-      setStatus("ok", "TXT 导出完成：记录当前路径。");
+      setStatus("ok", "TXT 已生成：记录当前路径，请点击保存。");
       return;
     }
 
@@ -1555,27 +1583,27 @@ async function downloadSelectedFormats() {
 }
 
 readButton.addEventListener("click", () => readConversation());
-fixedWindowButton.addEventListener("click", openSidePanel);
+fixedWindowButton.addEventListener("click", openWorkspace);
 focusSourceButton.addEventListener("click", focusSourceTab);
 
-if (sidePanelMode) {
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (tabId !== sideSourceTabId) return;
+if (workspaceMode) {
+  extensionAPI.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (tabId !== workspaceSourceTabId) return;
     if (changeInfo.title || changeInfo.url) {
       try {
         assertChatGPTPage(tab.url);
         showSourceTab(tab);
       } catch {
-        clearSideSource();
-        setStatus("error", "此标签已离开 ChatGPT，请重新打开侧栏。");
+        clearWorkspaceSource();
+        setStatus("error", "此标签已离开 ChatGPT，请重新打开独立导出页。");
       }
     }
   });
 
-  chrome.tabs.onRemoved.addListener((tabId) => {
-    if (tabId !== sideSourceTabId) return;
-    clearSideSource();
-    setStatus("error", "此标签已经关闭。");
+  extensionAPI.tabs.onRemoved.addListener((tabId) => {
+    if (tabId !== workspaceSourceTabId) return;
+    clearWorkspaceSource();
+    setStatus("error", "此标签已经关闭。已生成的文本或备份仍可保存。");
   });
 }
 
@@ -1603,4 +1631,5 @@ reportButton.addEventListener("click", () => {
     filename,
     "application/json"
   );
+  setStatus("ok", "诊断文件已生成，请点击保存。");
 });
