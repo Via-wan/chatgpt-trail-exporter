@@ -152,6 +152,9 @@ function setCooldown(seconds) {
   const JSZip = (() => {
     const module = { exports: {} };
     const exports = module.exports;
+    // Explicit timer fallback for isolated Safari userscript worlds.
+    const setImmediate = (callback, ...args) => setTimeout(callback, 0, ...args);
+    const clearImmediate = (id) => clearTimeout(id);
 ${src["vendor/jszip.min.js"]}
     return module.exports;
   })();
