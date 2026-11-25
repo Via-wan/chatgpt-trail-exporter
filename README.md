@@ -1,17 +1,23 @@
 # ChatGPT Trail Exporter · Userscripts 版
 
-免费 Safari 用户脚本版（0.7.3），不需要 Xcode、苹果开发者会员或临时加载扩展。原 Chrome 版在 `main`，原 Safari 扩展版在 `safari-compat`。
+免费 Safari 用户脚本版（0.7.3），不需要 Xcode、苹果开发者会员或临时加载扩展。原 [Chrome 版](https://github.com/Via-wan/chatgpt-trail-exporter/tree/main) 在 `main`，原 [Safari 扩展版](https://github.com/Via-wan/chatgpt-trail-exporter/tree/safari-compat) 在 `safari-compat`。
 
 ## 安装
 
-1. 安装 [Userscripts](https://apps.apple.com/app/userscripts/id1463298887)，打开一次 App。
+1. 安装 [Userscripts](https://apps.apple.com/app/userscripts/id1463298887)，打开一次 App；如提示选择脚本存放目录，先完成设置。
 2. Safari → 设置 → 扩展 → 启用 Userscripts。
-3. 用 Safari 打开 [安装脚本](https://raw.githubusercontent.com/Via-wan/chatgpt-trail-exporter/userscripts/chatgpt-trail-exporter.user.js)。
-4. 点击 Safari 工具栏中的 Userscripts 图标，在弹出的安装提示中确认安装。
+3. 用 Safari 打开 [安装脚本](https://raw.githubusercontent.com/Via-wan/chatgpt-trail-exporter/userscripts/chatgpt-trail-exporter.user.js)。如果看到大量代码，这是正常现象。
+4. 点击 Safari 工具栏中的 Userscripts 图标，点击黄色的 **Userscript Detected: Click to install** 提示并确认安装。
 5. 打开或刷新已登录的 ChatGPT 网页。按 Safari 提示授予 Userscripts 对当前 ChatGPT 网站的访问权限（始终允许此网站）。不必为所有网站授权。
 6. 点击 ChatGPT 网页右下角“对话导出”按钮。
 
 如第 4 步没有出现安装提示，将上述脚本保存为 `chatgpt-trail-exporter.user.js`，放入 Userscripts App 设置的脚本目录（可在 App 中查看），再打开 Safari 工具栏中的 Userscripts 弹窗，让它重新加载脚本列表，最后刷新 ChatGPT。
+
+### 排查：新标签页或 Work 窗口没有显示导出按钮
+
+如果一个窗口能显示导出按钮，另一个窗口没有，先检查其网址是否在脚本匹配范围内。点击未显示按钮的标签页顶部 Userscripts 图标，根据 Safari 的提示允许访问该网站，然后刷新。若希望新窗口自动加载，在网站访问权限中选择“始终允许”；不必授权其他网站。菜单名称可能随系统版本变化。此问题一般不需要重新安装脚本。
+
+已在 Safari 上确认脚本安装与界面显示；完整导出流程及 Work 等不同窗口类型的数据读取仍需实际测试。
 
 ## 使用
 
