@@ -4,13 +4,15 @@
 
 > 本项目由 [Via-wan](https://github.com/Via-wan) 开源维护，不是 OpenAI 官方扩展。项目依赖 ChatGPT 网页内部接口；页面或接口更新后，部分功能可能需要同步适配。
 
+如果只是希望在 Safari 中免费、长期使用导出器，建议直接使用 [Userscripts 版](https://github.com/Via-wan/chatgpt-trail-exporter/tree/userscripts)，无需 Xcode 或临时扩展；[安装脚本](https://raw.githubusercontent.com/Via-wan/chatgpt-trail-exporter/userscripts/chatgpt-trail-exporter.user.js)。本分支保留原生 Safari 扩展方案。
+
 ## 功能
 
 - 从当前 ChatGPT 对话页读取原始 conversation JSON。
 - 完整保留 `mapping`、`current_node`、`parent`、`children` 和全部分支。
 - 下载原始 JSON、当前路径 Markdown + 图片、当前路径 TXT、结构诊断报告。
 - JSON / Markdown / TXT 可复选；选择多种格式时打包进同名文件夹与 ZIP，一次下载完成。
-- 自动以 `标题（起始日期~导出日期）` 命名，方便重复备份。
+- 自动以 `标题（起始日期~结束日期）` 命名，方便重复备份。
 - 浏览器刚启动、页面会话尚未准备好时，会自动重试页面连接；不会把 429 或 500 当成连接问题反复请求。
 - 可从任意正常 ChatGPT 页面粘贴另一个对话链接，绕过超长窗口的页面渲染直接导出。
 - 若完整对话树接口返回 500，自动以逐级缩小的分页请求抢救当前路径，并在界面、JSON 和诊断报告中标注。
@@ -58,7 +60,7 @@ xcrun safari-web-extension-packager "/path/to/chatgpt-trail-exporter-safari-comp
    - `JSON`：正式备份，保留全部分支。
    - `Markdown`：当前路径的可读文本与沿途图片；Markdown 使用相对路径引用 `images` 文件夹。
    - `TXT`：当前路径的纯文本版本，保留角色、时间、正文与分支点提示。
-4. 只选择 JSON 或 TXT 时直接下载对应文件；只选择 Markdown 时下载 MD 与图片 ZIP；选择两种或三种时下载 `标题（起始日期~导出日期）.zip`，内容放在同名文件夹中。
+4. 只选择 JSON 或 TXT 时直接下载对应文件；只选择 Markdown 时下载 MD 与图片 ZIP；选择两种或三种时下载 `标题（起始日期~结束日期）.zip`，内容放在同名文件夹中。
 5. 文件生成后，点击出现的“点击保存：文件名”链接，正式交由 Safari 下载。诊断报告也按此方式保存。不要在保存前关闭或刷新导出页。
 
 ### 独立导出页
